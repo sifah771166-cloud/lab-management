@@ -1,7 +1,7 @@
 const sequelize = require('../config/database');
-const Kunjungan = require('./Kunjungan');
-const Peminjaman = require('./Peminjaman');
-const Barang = require('./Barang');
+const Kunjungan = require('./kunjungan');
+const Peminjaman = require('./peminjaman');
+const Barang = require('./barang');
 
 const db = { sequelize, Kunjungan, Peminjaman, Barang };
 
