@@ -1,81 +1,66 @@
-let kunjungan = [];
-let peminjaman = [];
-let barangList = ["PC", "Mouse", "Keyboard", "Headset"];
+const API_BASE = 'http://localhost:5000/api';
 
-// NAVIGASI
-function showPage(pageId) {
-  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  document.getElementById(pageId).classList.add("active");
+// Ambil daftar barang dari server untuk dropdown
+async function loadBarang() {
+  try {
+    const res = await fetch(`${API_BASE}/barang`); // perlu tambahkan endpoint GET /api/barang
+    const barang = await res.json();
+    const select = document.getElementById('barangP');
+    select.innerHTML = '<option value="">Pilih Barang</option>';
+    barang.forEach(b => {
+      select.innerHTML += `<option value="${b.nama}">${b.nama}</option>`;
+    });
+  } catch (err) {
+    console.error('Gagal load barang:', err);
+  }
 }
 
-// INIT BARANG
-function loadBarang() {
-  const select = document.getElementById("barangP");
-  barangList.forEach(b => {
-    let option = document.createElement("option");
-    option.value = b;
-    option.textContent = b;
-    select.appendChild(option);
-  });
-}
-
-// TAMBAH KUNJUNGAN
-function tambahKunjungan() {
-  const nama = document.getElementById("namaK").value;
-  const kelas = document.getElementById("kelasK").value;
-  const tanggal = document.getElementById("tanggalK").value;
-
-  if (!nama || !kelas || !tanggal) return alert("Isi semua data!");
-
-  kunjungan.push({ nama, kelas, tanggal });
-  renderKunjungan();
-}
-
-// RENDER KUNJUNGAN
-function renderKunjungan() {
-  const table = document.getElementById("tableKunjungan");
-  table.innerHTML = "";
-
-  kunjungan.forEach((k, i) => {
-    table.innerHTML += `
+// === KUNJUNGAN ===
+async function renderKunjungan() {
+  const res = await fetch(`${API_BASE}/kunjungan`);
+  const data = await res.json();
+  const tbody = document.getElementById('tableKunjungan');
+  tbody.innerHTML = '';
+  data.forEach(k => {
+    tbody.innerHTML += `
       <tr>
         <td>${k.nama}</td>
         <td>${k.kelas}</td>
         <td>${k.tanggal}</td>
-        <td><button onclick="hapusKunjungan(${i})">Hapus</button></td>
+        <td><button onclick="hapusKunjungan(${k.id})">Hapus</button></td>
       </tr>
     `;
   });
-
-  document.getElementById("totalK").textContent = kunjungan.length;
+  document.getElementById('totalK').textContent = data.length;
 }
 
-// HAPUS KUNJUNGAN
-function hapusKunjungan(i) {
-  kunjungan.splice(i, 1);
+async function tambahKunjungan() {
+  const nama = document.getElementById('namaK').value;
+  const kelas = document.getElementById('kelasK').value;
+  const tanggal = document.getElementById('tanggalK').value;
+  if (!nama || !kelas || !tanggal) return alert('Isi semua data!');
+
+  await fetch(`${API_BASE}/kunjungan`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nama, kelas, tanggal })
+  });
   renderKunjungan();
 }
 
-// TAMBAH PEMINJAMAN
-function tambahPeminjaman() {
-  const nama = document.getElementById("namaP").value;
-  const barang = document.getElementById("barangP").value;
-  const jumlah = document.getElementById("jumlahP").value;
-  const tanggal = document.getElementById("tanggalP").value;
-
-  if (!nama || !barang || !jumlah || !tanggal) return alert("Isi semua data!");
-
-  peminjaman.push({ nama, barang, jumlah, tanggal, status: "Dipinjam" });
-  renderPeminjaman();
+async function hapusKunjungan(id) {
+  await fetch(`${API_BASE}/kunjungan/${id}`, { method: 'DELETE' });
+  renderKunjungan();
 }
 
-// RENDER PEMINJAMAN
-function renderPeminjaman() {
-  const table = document.getElementById("tablePeminjaman");
-  table.innerHTML = "";
-
-  peminjaman.forEach((p, i) => {
-    table.innerHTML += `
+// === PEMINJAMAN ===
+async function renderPeminjaman() {
+  const res = await fetch(`${API_BASE}/peminjaman`);
+  const data = await res.json();
+  const tbody = document.getElementById('tablePeminjaman');
+  tbody.innerHTML = '';
+  data.forEach(p => {
+    tbody.innerHTML += `
       <tr>
         <td>${p.nama}</td>
         <td>${p.barang}</td>
@@ -83,27 +68,53 @@ function renderPeminjaman() {
         <td>${p.jumlah}</td>
         <td>${p.status}</td>
         <td>
-          <button onclick="kembalikan(${i})">Kembalikan</button>
-          <button onclick="hapusPeminjaman(${i})">Hapus</button>
+          <button onclick="kembalikan(${p.id})" ${p.status === 'Dikembalikan' ? 'disabled' : ''}>Kembalikan</button>
+          <button onclick="hapusPeminjaman(${p.id})">Hapus</button>
         </td>
       </tr>
     `;
   });
-
-  document.getElementById("totalP").textContent = peminjaman.length;
+  document.getElementById('totalP').textContent = data.length;
 }
 
-// KEMBALIKAN BARANG
-function kembalikan(i) {
-  peminjaman[i].status = "Dikembalikan";
+async function tambahPeminjaman() {
+  const nama = document.getElementById('namaP').value;
+  const barang = document.getElementById('barangP').value;
+  const jumlah = document.getElementById('jumlahP').value;
+  const tanggal = document.getElementById('tanggalP').value;
+  if (!nama || !barang || !jumlah || !tanggal) return alert('Isi semua data!');
+
+  await fetch(`${API_BASE}/peminjaman`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nama, barang, jumlah, tanggal })
+  });
   renderPeminjaman();
 }
 
-// HAPUS PEMINJAMAN
-function hapusPeminjaman(i) {
-  peminjaman.splice(i, 1);
+async function kembalikan(id) {
+  await fetch(`${API_BASE}/peminjaman/${id}/kembalikan`, { method: 'PATCH' });
   renderPeminjaman();
 }
 
-// LOAD AWAL
+async function hapusPeminjaman(id) {
+  await fetch(`${API_BASE}/peminjaman/${id}`, { method: 'DELETE' });
+  renderPeminjaman();
+}
+
+// Navigasi
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  if (pageId === 'dashboard') {
+    renderKunjungan();
+    renderPeminjaman();
+  }
+  if (pageId === 'kunjungan') renderKunjungan();
+  if (pageId === 'peminjaman') renderPeminjaman();
+}
+
+// Inisialisasi
 loadBarang();
+renderKunjungan();
+renderPeminjaman();
